@@ -1,36 +1,35 @@
 FROM python:3.8-slim-bullseye
 
-# set work directory
+# Set work directory
 WORKDIR /app
 
-# dependencies for psycopg2
-RUN apt-get update && apt-get install --no-install-recommends -y dnsutils=1:9.11.5.P4+dfsg-5.1+deb10u11 libpq-dev python3-dev \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
-
-# Re-run sed and apt-get install for good measure (your original Dockerfile had this too)
-RUN sed -i 's|http://deb.debian.org|http://archive.debian.org|g' /etc/apt/sources.list \
-    && sed -i 's|http://security.debian.org|http://archive.debian.org|g' /etc/apt/sources.list \
-    && apt-get update && apt-get install --no-install-recommends -y dnsutils libpq-dev python3-dev \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+# Install dependencies for psycopg2 and system packages
+RUN apt-get update && \
+    apt-get install --no-install-recommends -y \
+        dnsutils \
+        libpq-dev \
+        python3-dev \
+        build-essential \
+        && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Set environment variables
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 
-# Install dependencies
-RUN python -m pip install --no-cache-dir pip==22.0.4
-COPY requirements.txt requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+# Install pip and Python dependencies
+COPY requirements.txt .
+RUN python -m pip install --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
 
-# copy project
-COPY . /app/
+# Copy project files
+COPY . .
 
-# expose port 8000
+# Expose port 8000
 EXPOSE 8000
 
-RUN python3 /app/manage.py migrate
+# Run migrations
+RUN python3 manage.py migrate
 
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers","6", "pygoat.wsgi"]
+# Start server
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "6", "pygoat.wsgi"]
 
