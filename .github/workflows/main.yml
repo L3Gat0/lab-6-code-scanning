@@ -84,6 +84,7 @@ jobs:
           command: quickview,cves
           only-severities: critical,high
           image: pygoat_app:latest
+          output: sarif
           sarif-file: scout-report.sarif
 
       - name: Upload Scout SARIF artifact
